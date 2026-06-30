@@ -15,7 +15,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Entity
 @Table(name = "detalle_pedido")
-public class DetallePedido {
+public class DetallePedido 
+{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
