@@ -55,7 +55,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Lombok: reduce código repetitivo como getters, setters y constructores -->
+        <!-- Lombok: reduce código repetitivo -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -111,31 +111,6 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
-            </plugin>
-
-            <!-- JaCoCo: genera el reporte real de cobertura de pruebas -->
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
-
-                <executions>
-                    <!-- Prepara JaCoCo antes de ejecutar los tests -->
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-
-                    <!-- Genera el reporte después de ejecutar los tests -->
-                    <execution>
-                        <id>report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
         </plugins>
