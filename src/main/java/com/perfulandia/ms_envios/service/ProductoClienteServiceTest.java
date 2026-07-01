@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 // NO se guarda en BD.
 // Sirve para llamar por HTTP a otro microservicio usando RestTemplate.
 @Service
-public class ProductoClienteService {
+public class ProductoClienteServiceTest {
 
     @Autowired
     private RestTemplate restTemplate;
