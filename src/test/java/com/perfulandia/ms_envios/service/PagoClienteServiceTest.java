@@ -1,17 +1,19 @@
 package com.perfulandia.ms_envios.service;
 
-import org.junit.jupiter.api.BeforeEach;
+import com.perfulandia.ms_envios.dto.PagoConsultaDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+// Prueba del PagoClienteService (comunicación REST resiliente con MS Pagos, reembolso HU-48).
 @ExtendWith(MockitoExtension.class)
 class PagoClienteServiceTest {
 
@@ -21,35 +23,41 @@ class PagoClienteServiceTest {
     @InjectMocks
     private PagoClienteService pagoClienteService;
 
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(
-                pagoClienteService,
-                "urlPagos",
-                "http://localhost:8086"
-        );
+    // Reembolso normal: busca el pago del pedido y luego cambia su estado a RECHAZADO.
+    @Test
+    void solicitarReembolso_pagoExiste_cambiaEstado() {
+        // Paso 1: el GET devuelve un pago con id
+        PagoConsultaDTO pago = new PagoConsultaDTO(10L, 1L, "CONFIRMADO");
+        when(restTemplate.getForObject(anyString(), eq(PagoConsultaDTO.class))).thenReturn(pago);
+
+        pagoClienteService.solicitarReembolso(1L);
+
+        // Verifica que se llamó al GET (buscar) y al PUT (cambiar estado)
+        verify(restTemplate).getForObject(anyString(), eq(PagoConsultaDTO.class));
+        verify(restTemplate).put(anyString(), any());
     }
 
+    // Si el pedido no tiene pago (GET devuelve null), NO intenta cambiar estado.
     @Test
-    void solicitarReembolso_llamaRestTemplatePut() {
-        Long idPedido = 1L;
-        String url = "http://localhost:8086/api/v1/pagos/pedido/" + idPedido;
+    void solicitarReembolso_sinPago_noCambiaEstado() {
+        when(restTemplate.getForObject(anyString(), eq(PagoConsultaDTO.class))).thenReturn(null);
 
-        pagoClienteService.solicitarReembolso(idPedido);
+        pagoClienteService.solicitarReembolso(1L);
 
-        verify(restTemplate).put(url, null);
+        // Se llamó al GET, pero NO al PUT (porque no había pago)
+        verify(restTemplate).getForObject(anyString(), eq(PagoConsultaDTO.class));
+        verify(restTemplate, never()).put(anyString(), any());
     }
 
+    // RESILIENCIA: si Pagos falla, el catch atrapa el error y Envíos NO se cae.
     @Test
-    void solicitarReembolso_siPagosFalla_noLanzaExcepcion() {
-        Long idPedido = 1L;
+    void solicitarReembolso_siFallaNoLanzaExcepcion() {
+        when(restTemplate.getForObject(anyString(), eq(PagoConsultaDTO.class)))
+                .thenThrow(new RuntimeException("MS Pagos caído"));
 
-        doThrow(new RuntimeException("MS Pagos caído"))
-                .when(restTemplate)
-                .put(anyString(), isNull());
+        // No debe lanzar excepción (el try/catch la atrapa)
+        pagoClienteService.solicitarReembolso(1L);
 
-        assertDoesNotThrow(() -> pagoClienteService.solicitarReembolso(idPedido));
-
-        verify(restTemplate).put(anyString(), isNull());
+        verify(restTemplate).getForObject(anyString(), eq(PagoConsultaDTO.class));
     }
 }
