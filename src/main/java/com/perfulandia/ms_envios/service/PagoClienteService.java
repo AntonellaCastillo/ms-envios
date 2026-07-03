@@ -1,5 +1,6 @@
 package com.perfulandia.ms_envios.service;
 
+import com.perfulandia.ms_envios.dto.PagoConsultaDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,12 +16,21 @@ public class PagoClienteService {
     @Value("${ms.pagos.url:http://localhost:8086}")
     private String urlPagos;
 
-    // HU-48: al cancelar un pedido pagado, le pide a MS Pagos que haga el reembolso.
+    // HU-48: al cancelar un pedido pagado, le pide a MS Pagos que marque el pago como RECHAZADO (reembolso).
+    // Se hace en 2 pasos: 1) buscar el pago del pedido, 2) cambiar su estado a RECHAZADO.
     // try/catch = RESILIENCIA: si Pagos está caído, Envíos NO se cae.
     public void solicitarReembolso(Long idPedido) {
         try {
-            String url = urlPagos + "/api/v1/pagos/pedido/" + idPedido;
-            restTemplate.put(url, null);
+            // Paso 1: obtener el pago asociado al pedido
+            String urlBuscar = urlPagos + "/api/v1/pagos/pedido/" + idPedido;
+            PagoConsultaDTO pago = restTemplate.getForObject(urlBuscar, PagoConsultaDTO.class);
+
+            // Paso 2: si existe, marcar su estado como RECHAZADO (reembolso)
+            if (pago != null && pago.getIdPago() != null) {
+                String urlEstado = urlPagos + "/api/v1/pagos/" + pago.getIdPago()
+                        + "/estado?nuevoEstado=RECHAZADO";
+                restTemplate.put(urlEstado, null);
+            }
         } catch (Exception e) {
             System.out.println("No se pudo solicitar reembolso a MS Pagos: " + e.getMessage());
         }
