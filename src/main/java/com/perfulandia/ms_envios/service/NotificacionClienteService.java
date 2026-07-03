@@ -16,12 +16,14 @@ public class NotificacionClienteService {
     @Value("${ms.notificaciones.url:http://localhost:8089}")
     private String urlNotificaciones;
 
-    // HU-25/HU-34: notifica al cliente cuando el estado de su pedido cambia.
+    // Notifica al cliente cuando el estado de su pedido cambia.
     // try/catch = RESILIENCIA: si Notificaciones está caído, Envíos NO se cae.
-    public void notificarCambioEstado(Long idPedido, String estado) {
-        try {
+    public void notificarCambioEstado(Long idPedido, String estado) 
+    {
+        try 
+        {
             EstadoPedidoDTO dto = new EstadoPedidoDTO(idPedido, estado);
-            String url = urlNotificaciones + "/api/v1/notificaciones";
+            String url = urlNotificaciones + "/api/notificaciones/enviar";
             restTemplate.postForObject(url, dto, Void.class);
         } catch (Exception e) {
             System.out.println("No se pudo notificar a MS Notificaciones: " + e.getMessage());
