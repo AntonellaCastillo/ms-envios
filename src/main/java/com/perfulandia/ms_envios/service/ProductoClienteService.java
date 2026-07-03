@@ -28,7 +28,7 @@ public class ProductoClienteService {
     // Retorna false si el producto no existe o si el otro microservicio falla.
     public boolean validarProducto(Long idProducto) {
         try {
-            String url = urlProductos + "/api/v1/productos/" + idProducto;
+            String url = urlProductos + "/api/productos/" + idProducto;
 
             ResponseEntity<Object> respuesta = restTemplate.getForEntity(url, Object.class);
 
@@ -49,7 +49,7 @@ public class ProductoClienteService {
         try {
             ReservaStockDTO dto = new ReservaStockDTO(idProducto, cantidad);
 
-            String url = urlProductos + "/api/v1/inventario/reservar";
+            String url = urlProductos + "/api/inventario/apartar";
 
             ResponseEntity<Void> respuesta = restTemplate.postForEntity(url, dto, Void.class);
 
@@ -70,7 +70,7 @@ public class ProductoClienteService {
         try {
             ReservaStockDTO dto = new ReservaStockDTO(idProducto, cantidad);
 
-            String url = urlProductos + "/api/v1/inventario/cancelar-reserva";
+            String url = urlProductos + "/api/inventario/apartar";
 
             ResponseEntity<Void> respuesta = restTemplate.postForEntity(url, dto, Void.class);
 
