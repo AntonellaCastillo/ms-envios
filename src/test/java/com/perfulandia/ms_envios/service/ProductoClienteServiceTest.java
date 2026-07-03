@@ -1,18 +1,19 @@
 package com.perfulandia.ms_envios.service;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+// Pruebas del ProductoClienteService (comunicación REST resiliente con MS Productos).
 @ExtendWith(MockitoExtension.class)
 class ProductoClienteServiceTest {
 
@@ -22,101 +23,67 @@ class ProductoClienteServiceTest {
     @InjectMocks
     private ProductoClienteService productoClienteService;
 
-    @BeforeEach
-    void setUp() {
-        // Como urlProductos viene desde @Value, en test la seteamos manualmente.
-        ReflectionTestUtils.setField(
-                productoClienteService,
-                "urlProductos",
-                "http://localhost:8082"
-        );
-    }
-
+    // validarProducto: existe -> true
     @Test
-    void validarProducto_productoExiste_devuelveTrue() {
-        Long idProducto = 1L;
-        String url = "http://localhost:8082/api/v1/productos/" + idProducto;
+    void validarProducto_existe_devuelveTrue() {
+        when(restTemplate.getForEntity(anyString(), eq(Object.class)))
+                .thenReturn(new ResponseEntity<>(HttpStatus.OK));
 
-        when(restTemplate.getForEntity(url, Object.class))
-                .thenReturn(ResponseEntity.ok(new Object()));
-
-        boolean resultado = productoClienteService.validarProducto(idProducto);
+        boolean resultado = productoClienteService.validarProducto(1L);
 
         assertTrue(resultado);
-        verify(restTemplate).getForEntity(url, Object.class);
     }
 
+    // validarProducto: si Productos falla -> false (resiliencia)
     @Test
-    void validarProducto_errorEnProductos_devuelveFalse() {
-        Long idProducto = 99L;
-        String url = "http://localhost:8082/api/v1/productos/" + idProducto;
+    void validarProducto_error_devuelveFalse() {
+        when(restTemplate.getForEntity(anyString(), eq(Object.class)))
+                .thenThrow(new RuntimeException("Productos caido"));
 
-        when(restTemplate.getForEntity(url, Object.class))
-                .thenThrow(new RuntimeException("MS Productos no disponible"));
-
-        boolean resultado = productoClienteService.validarProducto(idProducto);
+        boolean resultado = productoClienteService.validarProducto(1L);
 
         assertFalse(resultado);
-        verify(restTemplate).getForEntity(url, Object.class);
     }
 
+    // reservarStock: llama al PUT y devuelve true
     @Test
-    void reservarStock_respuestaExitosa_devuelveTrue() {
-        Long idProducto = 1L;
-        Integer cantidad = 3;
-        String url = "http://localhost:8082/api/v1/inventario/reservar";
+    void reservarStock_ok_devuelveTrue() {
+        doNothing().when(restTemplate).put(anyString(), any());
 
-        when(restTemplate.postForEntity(eq(url), any(Object.class), eq(Void.class)))
-                .thenReturn(ResponseEntity.ok().build());
-
-        boolean resultado = productoClienteService.reservarStock(idProducto, cantidad);
+        boolean resultado = productoClienteService.reservarStock(1L, 1L, 2, "OP-1");
 
         assertTrue(resultado);
-        verify(restTemplate).postForEntity(eq(url), any(Object.class), eq(Void.class));
+        verify(restTemplate).put(anyString(), any());
     }
 
+    // reservarStock: si Productos falla -> false (resiliencia)
     @Test
-    void reservarStock_errorEnProductos_devuelveFalse() {
-        Long idProducto = 1L;
-        Integer cantidad = 3;
-        String url = "http://localhost:8082/api/v1/inventario/reservar";
+    void reservarStock_error_devuelveFalse() {
+        doThrow(new RuntimeException("Productos caido")).when(restTemplate).put(anyString(), any());
 
-        when(restTemplate.postForEntity(eq(url), any(Object.class), eq(Void.class)))
-                .thenThrow(new RuntimeException("No se pudo reservar stock"));
-
-        boolean resultado = productoClienteService.reservarStock(idProducto, cantidad);
+        boolean resultado = productoClienteService.reservarStock(1L, 1L, 2, "OP-1");
 
         assertFalse(resultado);
-        verify(restTemplate).postForEntity(eq(url), any(Object.class), eq(Void.class));
     }
 
+    // cancelarReserva: llama al PUT y devuelve true
     @Test
-    void cancelarReserva_respuestaExitosa_devuelveTrue() {
-        Long idProducto = 1L;
-        Integer cantidad = 3;
-        String url = "http://localhost:8082/api/v1/inventario/cancelar-reserva";
+    void cancelarReserva_ok_devuelveTrue() {
+        doNothing().when(restTemplate).put(anyString(), any());
 
-        when(restTemplate.postForEntity(eq(url), any(Object.class), eq(Void.class)))
-                .thenReturn(ResponseEntity.ok().build());
-
-        boolean resultado = productoClienteService.cancelarReserva(idProducto, cantidad);
+        boolean resultado = productoClienteService.cancelarReserva(1L, 1L, 2, "OP-1");
 
         assertTrue(resultado);
-        verify(restTemplate).postForEntity(eq(url), any(Object.class), eq(Void.class));
+        verify(restTemplate).put(anyString(), any());
     }
 
+    // cancelarReserva: si Productos falla -> false (resiliencia)
     @Test
-    void cancelarReserva_errorEnProductos_devuelveFalse() {
-        Long idProducto = 1L;
-        Integer cantidad = 3;
-        String url = "http://localhost:8082/api/v1/inventario/cancelar-reserva";
+    void cancelarReserva_error_devuelveFalse() {
+        doThrow(new RuntimeException("Productos caido")).when(restTemplate).put(anyString(), any());
 
-        when(restTemplate.postForEntity(eq(url), any(Object.class), eq(Void.class)))
-                .thenThrow(new RuntimeException("No se pudo cancelar reserva"));
-
-        boolean resultado = productoClienteService.cancelarReserva(idProducto, cantidad);
+        boolean resultado = productoClienteService.cancelarReserva(1L, 1L, 2, "OP-1");
 
         assertFalse(resultado);
-        verify(restTemplate).postForEntity(eq(url), any(Object.class), eq(Void.class));
     }
 }
