@@ -13,7 +13,7 @@ public class NotificacionClienteService {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${ms.notificaciones.url:http://localhost:8090}")
+    @Value("${ms.notificaciones.url:http://localhost:8089}")
     private String urlNotificaciones;
 
     // HU-25/HU-34: notifica al cliente cuando el estado de su pedido cambia.
