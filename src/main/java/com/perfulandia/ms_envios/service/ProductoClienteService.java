@@ -1,6 +1,8 @@
 package com.perfulandia.ms_envios.service;
 
 import com.perfulandia.ms_envios.dto.ReservaStockDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -9,9 +11,11 @@ import org.springframework.web.client.RestTemplate;
 
 // Cliente de comunicación con MS Productos y Stock.
 // NO es una entidad. NO se guarda en BD.
-// Llama por HTTP a MS Productos usando RestTemplate.
+// Llama por HTTP a otro microservicio usando RestTemplate.
 @Service
 public class ProductoClienteService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductoClienteService.class);
 
     @Autowired
     private RestTemplate restTemplate;
@@ -26,7 +30,7 @@ public class ProductoClienteService {
             ResponseEntity<Object> respuesta = restTemplate.getForEntity(url, Object.class);
             return respuesta.getStatusCode().is2xxSuccessful();
         } catch (Exception e) {
-            System.out.println("No se pudo validar el producto en MS Productos: " + e.getMessage());
+            log.warn("No se pudo validar el producto {} en MS Productos: {}", idProducto, e.getMessage());
             return false;
         }
     }
@@ -41,8 +45,7 @@ public class ProductoClienteService {
             restTemplate.put(url, dto);
             return true;
         } catch (Exception e) {
-            // Resiliencia: si MS Productos está caído, MS Envíos no se cae.
-            System.out.println("No se pudo apartar stock en MS Productos: " + e.getMessage());
+            log.warn("No se pudo apartar stock del producto {} en MS Productos: {}", idProducto, e.getMessage());
             return false;
         }
     }
@@ -55,7 +58,7 @@ public class ProductoClienteService {
             restTemplate.put(url, dto);
             return true;
         } catch (Exception e) {
-            System.out.println("No se pudo cancelar la reserva en MS Productos: " + e.getMessage());
+            log.warn("No se pudo cancelar la reserva del producto {} en MS Productos: {}", idProducto, e.getMessage());
             return false;
         }
     }
